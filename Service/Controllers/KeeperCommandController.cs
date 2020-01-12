@@ -13,11 +13,24 @@ namespace Service.Controllers
     [ApiController]
     public class KeeperCommandController : ControllerBase
     {
-        IEndpointInstance _endpointInstance;
+        ICommandDespatcher _commandDespatcher;
 
-        public KeeperCommandController(IEndpointInstance endpointInstance)
+        public KeeperCommandController(ICommandDespatcher commandDespatcher)
         {
-            _endpointInstance = endpointInstance;
+            
+            _commandDespatcher = commandDespatcher;
+        }
+
+        [HttpGet]
+        public string Get()
+        {
+            var cmd = new RegisterKeeperCommand();
+            cmd.FirstName = "asd";
+            cmd.LastName = "asdas";
+
+            _commandDespatcher.SendCommand(cmd);
+
+            return "hello";
         }
 
         [HttpPost]
@@ -27,7 +40,31 @@ namespace Service.Controllers
             cmd.FirstName = firstName;
             cmd.LastName = lastName;
 
-            _endpointInstance.Send(cmd).ConfigureAwait(false);
+            _commandDespatcher.SendCommand(cmd);
+
+            return Ok();
+        }
+
+        [HttpPost]
+        public ActionResult RegisterTrailer([FromBody]TrailersDto trailersDto)
+        {
+            var cmd = new RegisterTrailersCommand();
+            cmd.KeeperId = trailersDto.KeeperId;
+
+            cmd.payment.Amount = trailersDto.Payment.Amount;
+            cmd.payment.Id = trailersDto.Payment.Id;
+
+            foreach (var trailerDto in trailersDto.Trailers)
+            {
+                cmd.Trailers.Append(new RegisterTrailersCommand.Trailer()
+                {
+                    Manufacturer = trailerDto.Manufacturer,
+                    Vin = trailerDto.Vin,
+                    Weight = trailerDto.Weight
+                });
+            }
+
+            _commandDespatcher.SendCommand(cmd);
 
             return Ok();
         }
